@@ -17,14 +17,17 @@ void pid_init(PID_Controller *pid, float kp, float ki, float kd,
 }
 
 float pid_update(PID_Controller *pid, float error) {
+  float max_d = 50.0f;
+  float max_i = 50.0f;
+
   pid->integral += error;
+  pid->integral = clamp(pid->integral, -max_i, max_i);
   float derivative = error - pid->prev_error;
-  float max_d = 10;
-  if (fabs(derivative) > max_d)
-    derivative = max_d * (derivative / fabs(derivative));
+  derivative = clamp(derivative, -1 * max_d, max_d);
   pid->prev_error = error;
 
   float output =
       pid->kp * error + pid->ki * pid->integral + pid->kd * derivative;
+
   return clamp(output, pid->min_output, pid->max_output);
 }

@@ -1,6 +1,6 @@
 #ifndef SIM_H
 #define SIM_H
-
+#include <stdio.h>
 #define MAX_TRACK_POINTS 10000
 
 typedef struct {
@@ -11,11 +11,12 @@ typedef struct {
 typedef struct {
   Point position;
   double orientation;
+  FILE *path_file;
+  float variation;
 } Car;
 
-void generate_track(Point[]);
-double get_distance_from_line(Car, Point[]);
-void update_car_position(Car *, double, double, double);
-void add_point(Point[], double, double);
-
+void sim_init();
+void sim_deinit();
+void sim_read_sensors(int8_t[3]);
+void sim_drive_motors(double, double);
 #endif
