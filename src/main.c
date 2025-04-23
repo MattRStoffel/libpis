@@ -3,6 +3,7 @@
 #include "pid.h"
 
 #include <math.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -10,10 +11,10 @@
 #define LINE_SENS_2 6
 #define LINE_SENS_3 26
 
-void read_sensors(int8_t sensors[3]) {
+void read_sensors(bool sensors[3]) {
   sensors[0] = get_gpio(LINE_SENS_1);
-  sensors[0] = get_gpio(LINE_SENS_2);
-  sensors[0] = get_gpio(LINE_SENS_3);
+  sensors[1] = get_gpio(LINE_SENS_2);
+  sensors[2] = get_gpio(LINE_SENS_3);
 }
 
 int main() {
@@ -30,15 +31,18 @@ int main() {
 
   // 2. Run simulation
   for (int i = 0; i < 19000; ++i) {
-    int8_t sensors[3];
+    bool sensors[3];
+
     read_sensors(sensors);
     double known_error = 0;
-    if (sensors[0])
+
+    if (sensors[0]) {
       known_error = 1;
-    else if (sensors[2])
+    } else if (sensors[2]) {
       known_error = -1;
-    else if (sensors[1])
+    } else if (sensors[1]) {
       known_error = 0;
+    }
 
     float diff = pid_update(&pid, known_error);
 
