@@ -1,12 +1,13 @@
 #include "DirectRegister.h"
+#include "lib/MotorController/MotorController.h"
 #include "pid.h"
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 
-#define LINE_SENS_1 23
-#define LINE_SENS_2 24
-#define LINE_SENS_3 25
+#define LINE_SENS_1 5
+#define LINE_SENS_2 6
+#define LINE_SENS_3 26
 
 void read_sensors(int8_t sensors[3]) {
   sensors[0] = getGPIO(LINE_SENS_1);
@@ -22,8 +23,9 @@ int main() {
   initGPIO(LINE_SENS_1, GPIO_INPUT);
   initGPIO(LINE_SENS_2, GPIO_INPUT);
   initGPIO(LINE_SENS_3, GPIO_INPUT);
+  MotorInit();
 
-  // 2. Run simulation
+  // 2. Run car
   double total_error = 0;
   for (int i = 0; i < 19000; ++i) {
     int8_t sensors[3];
