@@ -1,4 +1,5 @@
 #include "gpio.h"
+#include "motor.h"
 #include "pid.h"
 
 #include <math.h>
@@ -25,6 +26,8 @@ int main() {
   init_gpio(LINE_SENS_2, GPIO_INPUT);
   init_gpio(LINE_SENS_3, GPIO_INPUT);
 
+  MotorInit();
+
   // 2. Run simulation
   // double total_error = 0;
   for (int i = 0; i < 19000; ++i) {
@@ -41,6 +44,8 @@ int main() {
     // total_error += fabs(known_error);
     pid_update(&pid, known_error);
   }
+
+  StopMotor();
 
   return 0;
 }

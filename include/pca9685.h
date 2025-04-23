@@ -1,18 +1,5 @@
-/*****************************************************************************
- * | File        :   PCA9685.h
- * | Author      :   Waveshare team
- * | Function    :   Drive PCA9685
- * | Info        :
- *                Used to shield the underlying layers of each master
- *                and enhance portability
- *----------------
- * |	This version:   V1.0
- * | Date        :   2018-09-04
- * | Info        :   Basic version
- *
- ******************************************************************************/
-#ifndef __PCA9685_H_
-#define __PCA9685_H_
+#ifndef _PCA9685_H_
+#define _PCA9685_H_
 
 #include <stdint.h>
 
@@ -20,7 +7,6 @@
 #define UWORD uint16_t
 #define UDOUBLE uint32_t
 
-// GPIO config
 #define SUBADR1 0x02
 #define SUBADR2 0x03
 #define SUBADR3 0x04

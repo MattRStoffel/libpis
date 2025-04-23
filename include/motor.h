@@ -1,13 +1,5 @@
-/****
- *
- * TODO: HEADER
- *
- *****/
-
-#ifndef MOTORCONTROLLER_H
-#define MOTORCONTROLLER_H
-
-#include "../PCA9685/PCA9685.h"
+#ifndef _MOTOR_H_
+#define _MOTOR_H_
 
 // Motor B on the hat
 #define PWMB PCA_CHANNEL_5

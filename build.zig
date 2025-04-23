@@ -44,6 +44,9 @@ const src_files = &.{
     "main.c",
     "gpio.c",
     "pid.c",
+    "i2c.c",
+    "pca9685.c",
+    "motor.c",
 };
 
 const cflags = &.{ "-Wall", "-Wextra", "-Werror" };
