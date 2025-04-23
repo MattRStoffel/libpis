@@ -3,9 +3,17 @@
 #include "pid.h"
 
 #include <math.h>
+#include <signal.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+
+static volatile sig_atomic_t running = 1;
+
+void cancel_handler(int sig) {
+  signal(sig, SIG_IGN);
+  running = 0;
+}
 
 #define LINE_SENS_1 5
 #define LINE_SENS_2 6
@@ -19,7 +27,7 @@ void read_sensors(bool sensors[3]) {
 
 int main() {
   PID_Controller pid;
-  pid_init(&pid, 23.0, 0.00, 25.4, -100.0, 100.0);
+  pid_init(&pid, 23.0, 0.02, 25.4, -100.0, 100.0);
 
   setup_gpio();
 
@@ -29,8 +37,11 @@ int main() {
 
   MotorInit();
 
+  signal(SIGINT, cancel_handler);
+  signal(SIGTERM, cancel_handler);
+
   // 2. Run simulation
-  for (int i = 0; i < 19000; ++i) {
+  while (running) {
     bool sensors[3];
 
     read_sensors(sensors);
