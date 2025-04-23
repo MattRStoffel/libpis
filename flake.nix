@@ -1,31 +1,22 @@
 {
-  description = "A flake for a Python environment with PyTorch";
+  description = "libpiss";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
-    flake-utils.url = "github:numtide/flake-utils";
+
+    flake-parts.url = "github:hercules-ci/flake-parts";
   };
 
-  outputs = {
-    self,
-    nixpkgs,
-    flake-utils,
-  }:
-    flake-utils.lib.eachDefaultSystem (
-      system: let
-        pkgs = import nixpkgs {inherit system;};
-        python = pkgs.python312; # Or your desired Python version
-      in {
+  outputs = {flake-parts, ...} @ inputs:
+    flake-parts.lib.mkFlake {inherit inputs;} {
+      systems = ["x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin"];
+
+      perSystem = {pkgs, ...}: {
         devShells.default = pkgs.mkShell {
-          buildInputs = [
-            python # Include the base Python package
-            (python.withPackages (ps:
-              with ps; [
-                matplotlib
-                numpy
-              ])) # Add the Python environment with packages
+          buildInputs = with pkgs; [
+            zig
           ];
         };
-      }
-    );
+      };
+    };
 }

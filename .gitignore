@@ -1,4 +1,11 @@
-.ccls-cache
-.direnv
-compile_commands.json
+/.ccls-cache
+/.direnv
+/result*
 
+/compile_commands.json
+
+*.a
+*.o
+
+/.zig-cache/
+/zig-out/

@@ -1,9 +1,12 @@
-#include "DirectRegister.h"
+#include "gpio.h"
+
+#include <fcntl.h>
+#include <sys/mman.h>
+#include <unistd.h>
 
 volatile unsigned *gpio;
 
-// grab the memory of the GPIO pins
-int setup_io() {
+int setup_gpio() {
   int fd;
   void *map;
 
@@ -23,32 +26,33 @@ int setup_io() {
   return 0;
 }
 
-int initGPIO(int pin, int mode) {
-  // clearing any previous configs
+int init_gpio(int pin, int mode) {
+  // Clearing any previous configs
   *(gpio + OFFSET(pin)) &= ~(0b111 << SHIFT(pin));
-  // set function select register to output
+  // Set function select register to output
   *(gpio + OFFSET(pin)) |= (mode << SHIFT(pin));
   return (*(gpio + OFFSET(pin)) & (0b111 << SHIFT(pin))) ^ (mode << SHIFT(pin));
 }
 
-int setGPIO(int pin, int value) {
-  // make sure the pin is set to output
+int set_gpio(int pin, int value) {
+  // Make sure the pin is set to output
   if ((*(gpio + OFFSET(pin)) & (0b111 << SHIFT(pin))) ^
       (GPIO_OUTPUT << SHIFT(pin))) {
     return -1;
   }
+
   if (value) {
-    // set the pin high
+    // Set the pin high
     *(gpio + 7) = 1 << pin;
   } else {
-    // set the pin low
+    // Set the pin low
     *(gpio + 10) = 1 << pin;
   }
   return 0;
 }
 
-int getGPIO(int pin) {
-  // make sure the pin is set to input
+int get_gpio(int pin) {
+  // Make sure the pin is set to input
   if ((*(gpio + OFFSET(pin)) & (0b111 << SHIFT(pin))) ^
       (GPIO_INPUT << SHIFT(pin))) {
     return -1;
@@ -56,4 +60,4 @@ int getGPIO(int pin) {
   return (*(gpio + 13) & (1 << pin)) >> pin;
 }
 
-int clean_up_io() { return munmap(&gpio, 4096); }
+int deinit_gpio() { return munmap(&gpio, 4096); }
