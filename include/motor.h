@@ -7,8 +7,8 @@
 #define IN2B PCA_CHANNEL_4
 // Motor A
 #define PWMA 0
-#define IN1A 1
-#define IN2A 2
+#define IN1A 2
+#define IN2A 1
 
 #define FORWARD 'F'
 #define BACKWARD 'B'

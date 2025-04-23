@@ -29,7 +29,6 @@ int main() {
   MotorInit();
 
   // 2. Run simulation
-  // double total_error = 0;
   for (int i = 0; i < 19000; ++i) {
     int8_t sensors[3];
     read_sensors(sensors);
@@ -41,11 +40,17 @@ int main() {
     else if (sensors[1])
       known_error = 0;
 
-    // total_error += fabs(known_error);
-    pid_update(&pid, known_error);
+    float diff = pid_update(&pid, known_error);
+
+    if (diff < 0) {
+      RunMotor(MOTOR_A, FORWARD, 100 + diff);
+      RunMotor(MOTOR_B, FORWARD, 0 - diff);
+    } else {
+      RunMotor(MOTOR_A, FORWARD, 0 + diff);
+      RunMotor(MOTOR_B, FORWARD, 100 - diff);
+    }
   }
 
   StopMotor();
-
   return 0;
 }
