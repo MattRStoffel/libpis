@@ -58,11 +58,11 @@ int main() {
     float diff = pid_update(&pid, known_error);
 
     if (diff < 0.5) {
-      RunMotor(MOTOR_A, FORWARD, 1 * diff);
-      RunMotor(MOTOR_B, FORWARD, 2 * diff);
+      RunMotor(MOTOR_A, FORWARD, 100 * diff);
+      RunMotor(MOTOR_B, FORWARD, 200 * diff);
     } else {
-      RunMotor(MOTOR_A, FORWARD, 2 * diff);
-      RunMotor(MOTOR_B, FORWARD, 1 * diff);
+      RunMotor(MOTOR_A, FORWARD, 200 * diff);
+      RunMotor(MOTOR_B, FORWARD, 100 * diff);
     }
   }
 
