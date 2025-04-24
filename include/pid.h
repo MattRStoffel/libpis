@@ -5,12 +5,11 @@ typedef struct {
   float kp, ki, kd;
   float prev_error;
   float integral;
-  float min_output;
-  float max_output;
+  float clamp_val;
 } PID_Controller;
 
-void pid_init(PID_Controller *, float, float, float, float, float);
-float pid_update(PID_Controller *, float);
+void pid_init(PID_Controller*, float, float, float, float);
+float pid_update(PID_Controller*, float);
 float clamp(float, float, float);
 
 #endif

@@ -10,27 +10,42 @@
 
 static volatile sig_atomic_t running = 1;
 
+// PID
+#define KP 3.0
+#define KI 0.001
+#define KD 20.0
+
+// Error
+#define ERR_WEIGHT_STEP 2
+
+// Motors
+#define MAX_SPEED 60
+#define LEFT_MOTORS MOTOR_A
+#define RIGHT_MOTORS MOTOR_B
+
+// Sensors
+#define LINE_SENS_1 5
+#define LINE_SENS_2 6
+#define LINE_SENS_3 26
+#define NUM_SENS 3
+
 void cancel_handler(int sig) {
   signal(sig, SIG_IGN);
   running = 0;
 }
 
-#define LINE_SENS_1 5
-#define LINE_SENS_2 6
-#define LINE_SENS_3 26
-
-void read_sensors(bool sensors[3]) {
+void read_sensors(bool sensors[NUM_SENS]) {
   sensors[0] = get_gpio(LINE_SENS_1);
   sensors[1] = get_gpio(LINE_SENS_2);
   sensors[2] = get_gpio(LINE_SENS_3);
 }
 
-float calculate_error(const bool sensors[3]) {
-  const float weights[3] = {1.0, 0.0, -1.0};
+float calculate_error(const bool sensors[NUM_SENS]) {
+  const float weights[NUM_SENS] = {ERR_WEIGHT_STEP, 0.0, -ERR_WEIGHT_STEP};
   float sum = 0;
   int active_sensors = 0;
 
-  for (int i = 0; i < 3; ++i) {
+  for (int i = 0; i < NUM_SENS; ++i) {
     if (sensors[i]) {
       sum += weights[i];
       active_sensors++;
@@ -43,43 +58,20 @@ float calculate_error(const bool sensors[3]) {
   return sum / active_sensors;
 }
 
-void set_motor_speed(float pid_output) {
-  int max_speed = 100;
-  int sharp_thresh = 70;
-  int norm_thresh = 2;
+void steer_car(float pid_output) {
+  int left_speed = MAX_SPEED;
+  int right_speed = MAX_SPEED;
 
-  int left_speed = 0, right_speed = 0;
-  char left_dir = FORWARD;
-  char right_dir = FORWARD;
-
-  // Turning right
-  if (pid_output > norm_thresh) {
-    left_speed = max_speed;
-    if (pid_output > sharp_thresh) { // Big correction: reverse right motor
-      right_dir = BACKWARD;
-      right_speed = (int)(pid_output);
-    } else {
-      right_speed = max_speed - (int)(pid_output);
-    }
-  }
-  // Turning left
-  else if (pid_output < -norm_thresh) {
-    right_speed = max_speed;
-    if (pid_output < -sharp_thresh) { // Big correction: reverse left motor
-      left_dir = BACKWARD;
-      left_speed = (int)(-pid_output);
-    } else {
-      left_speed = max_speed - (int)(-pid_output);
-    }
-  }
-  // No correction needed
-  else {
-    left_speed = max_speed;
-    right_speed = max_speed;
+  if (pid_output > 0) {
+    // Turning right: reduce right motor speed
+    right_speed = MAX_SPEED - pid_output;
+  } else if (pid_output < 0) {
+    // Turning left: reduce left motor speed
+    left_speed = MAX_SPEED + pid_output; // since pid_output is negative
   }
 
-  RunMotor(MOTOR_A, left_dir, left_speed);
-  RunMotor(MOTOR_B, right_dir, right_speed);
+  RunMotor(LEFT_MOTORS, FORWARD, left_speed);
+  RunMotor(RIGHT_MOTORS, FORWARD, right_speed);
 }
 
 int main() {
@@ -95,14 +87,14 @@ int main() {
   signal(SIGTERM, cancel_handler);
 
   PID_Controller pid;
-  pid_init(&pid, 50.0, 0.0, 290, -100.0, 100.0);
+  pid_init(&pid, KP, KI, KD, MAX_SPEED);
 
   while (running) {
-    bool sensors[3];
+    bool sensors[NUM_SENS];
     read_sensors(sensors);
     double known_error = calculate_error(sensors);
-    float diff = pid_update(&pid, known_error);
-    set_motor_speed(diff);
+    float pid_out = pid_update(&pid, known_error * MAX_SPEED);
+    steer_car(pid_out);
   }
 
   StopMotor();
