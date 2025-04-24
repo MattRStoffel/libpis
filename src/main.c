@@ -53,7 +53,7 @@ float calculate_error(const bool sensors[NUM_SENS]) {
   }
 
   if (active_sensors == 0)
-    return 0.0;
+    return 999;
 
   return sum / active_sensors;
 }
@@ -61,11 +61,12 @@ float calculate_error(const bool sensors[NUM_SENS]) {
 void steer_car(float pid_output) {
   int left_speed = MAX_SPEED;
   int right_speed = MAX_SPEED;
+  int adjusted_speed = pid_output * MAX_SPEED;
 
-  if (pid_output > 0) {
-    right_speed -= pid_output;
-  } else if (pid_output < 0) {
-    left_speed += pid_output; // add caus pid is negative
+  if (adjusted_speed > 0) {
+    right_speed -= adjusted_speed;
+  } else if (adjusted_speed < 0) {
+    left_speed += adjusted_speed; // add caus pid is negative
   }
 
   RunMotor(LEFT_MOTORS, FORWARD, left_speed);
@@ -87,11 +88,16 @@ int main() {
   PID_Controller pid;
   pid_init(&pid, KP, KI, KD, MAX_SPEED);
 
+  float known_error;
   while (running) {
     bool sensors[NUM_SENS];
     read_sensors(sensors);
-    double known_error = calculate_error(sensors);
-    float pid_out = pid_update(&pid, known_error * MAX_SPEED);
+    float error = calculate_error(sensors);
+    if (error != 999) {
+      known_error = error;
+    }
+
+    float pid_out = pid_update(&pid, known_error);
     steer_car(pid_out);
   }
 
