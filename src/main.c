@@ -89,18 +89,21 @@ int main() {
   pid_init(&pid, KP, KI, KD, MAX_SPEED);
 
   float known_error;
+  float error;
+  float pid_out;
+  bool sensors[NUM_SENS];
+
   while (running) {
-    bool sensors[NUM_SENS];
     read_sensors(sensors);
-    float error = calculate_error(sensors);
+    error = calculate_error(sensors);
     if (error != 999) {
       known_error = error;
     }
-
-    float pid_out = pid_update(&pid, known_error);
+    pid_out = pid_update(&pid, known_error);
     steer_car(pid_out);
   }
 
   StopMotor();
+  deinit_gpio();
   return 0;
 }

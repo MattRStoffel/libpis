@@ -13,6 +13,6 @@ int setup_gpio();
 int init_gpio(int pin, int mode);
 int set_gpio(int pin, int value);
 int get_gpio(int pin);
-int clean_up_io();
+int deinit_gpio();
 
 #endif
