@@ -63,11 +63,9 @@ void steer_car(float pid_output) {
   int right_speed = MAX_SPEED;
 
   if (pid_output > 0) {
-    // Turning right: reduce right motor speed
-    right_speed = MAX_SPEED - pid_output;
+    right_speed -= pid_output;
   } else if (pid_output < 0) {
-    // Turning left: reduce left motor speed
-    left_speed = MAX_SPEED + pid_output; // since pid_output is negative
+    left_speed += pid_output; // add caus pid is negative
   }
 
   RunMotor(LEFT_MOTORS, FORWARD, left_speed);
