@@ -11,23 +11,25 @@
 static volatile sig_atomic_t running = 1;
 
 // PID
-#define KP 3.0
-#define KI 0.001
-#define KD 20.0
+#define KP 10.0
+#define KI 0.0
+#define KD 30.0
 
 // Error
 #define ERR_WEIGHT_STEP 2
 
 // Motors
-#define MAX_SPEED 60
+#define MAX_SPEED 80
 #define LEFT_MOTORS MOTOR_A
 #define RIGHT_MOTORS MOTOR_B
 
 // Sensors
-#define LINE_SENS_1 5
-#define LINE_SENS_2 6
-#define LINE_SENS_3 26
-#define NUM_SENS 3
+#define LINE_SENS_1 20
+#define LINE_SENS_2 21
+#define LINE_SENS_3 5
+#define LINE_SENS_4 26
+#define LINE_SENS_5 6
+#define NUM_SENS 5
 
 void cancel_handler(int sig) {
   signal(sig, SIG_IGN);
@@ -38,10 +40,15 @@ void read_sensors(bool sensors[NUM_SENS]) {
   sensors[0] = get_gpio(LINE_SENS_1);
   sensors[1] = get_gpio(LINE_SENS_2);
   sensors[2] = get_gpio(LINE_SENS_3);
+  sensors[3] = get_gpio(LINE_SENS_4);
+  sensors[4] = get_gpio(LINE_SENS_5);
+  // print the sensor values
+  printf("\rSensors: %d %d %d %d %d", sensors[0], sensors[1], sensors[2], sensors[3], sensors[4]);
 }
 
 float calculate_error(const bool sensors[NUM_SENS]) {
-  const float weights[NUM_SENS] = {ERR_WEIGHT_STEP, 0.0, -ERR_WEIGHT_STEP};
+  const float weights[NUM_SENS] = {ERR_WEIGHT_STEP * 2, ERR_WEIGHT_STEP, 0.0, -ERR_WEIGHT_STEP,
+                                   -ERR_WEIGHT_STEP * 2};
   float sum = 0;
   int active_sensors = 0;
 
@@ -61,16 +68,26 @@ float calculate_error(const bool sensors[NUM_SENS]) {
 void steer_car(float pid_output) {
   int left_speed = MAX_SPEED;
   int right_speed = MAX_SPEED;
+  char left_dir = FORWARD;
+  char right_dir = FORWARD;
   int adjusted_speed = pid_output * MAX_SPEED;
 
-  if (adjusted_speed > 0) {
+  if (pid_output > 0) {
     right_speed -= adjusted_speed;
-  } else if (adjusted_speed < 0) {
-    left_speed += adjusted_speed; // add caus pid is negative
+    if (pid_output > 10) {
+      right_speed = MAX_SPEED;
+      right_dir = BACKWARD;
+    }
+  } else if (pid_output < 0) {
+    left_speed += adjusted_speed;
+    if (pid_output < -10) {
+      left_speed = MAX_SPEED;
+      left_dir = BACKWARD;
+    }
   }
 
-  RunMotor(LEFT_MOTORS, FORWARD, left_speed);
-  RunMotor(RIGHT_MOTORS, FORWARD, right_speed);
+  RunMotor(LEFT_MOTORS, left_dir, left_speed);
+  RunMotor(RIGHT_MOTORS, right_dir, right_speed);
 }
 
 int main() {
@@ -79,6 +96,8 @@ int main() {
   init_gpio(LINE_SENS_1, GPIO_INPUT);
   init_gpio(LINE_SENS_2, GPIO_INPUT);
   init_gpio(LINE_SENS_3, GPIO_INPUT);
+  init_gpio(LINE_SENS_4, GPIO_INPUT);
+  init_gpio(LINE_SENS_5, GPIO_INPUT);
 
   MotorInit();
 
