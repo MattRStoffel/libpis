@@ -7,11 +7,6 @@
 #include <sys/ioctl.h>
 #include <unistd.h>
 
-struct i2c_device {
-  int fd;
-  uint16_t addr;
-};
-
 i2c_device* i2c_open(char* dev_path, uint8_t addr) {
   struct i2c_device* dev = malloc(sizeof(i2c_device));
   if (dev == NULL) {

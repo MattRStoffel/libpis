@@ -47,6 +47,8 @@ const src_files = &.{
     "i2c.c",
     "pca9685.c",
     "motor.c",
+    "tcs34725.c",
+    "tcsoup.c",
 };
 
 const cflags = &.{ "-Wall", "-Wextra", "-Werror" };

@@ -4,7 +4,10 @@
 #include <stdint.h>
 #include <sys/types.h>
 
-typedef struct i2c_device i2c_device;
+typedef struct i2c_device {
+  int fd;
+  uint16_t addr;
+} i2c_device;
 
 i2c_device* i2c_open(char* dev_path, uint8_t addr);
 void i2c_close(i2c_device* dev);

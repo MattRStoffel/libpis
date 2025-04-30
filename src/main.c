@@ -1,6 +1,7 @@
 #include "gpio.h"
 #include "motor.h"
 #include "pid.h"
+#include "tcsoup.h"
 
 #include <math.h>
 #include <signal.h>
@@ -30,6 +31,8 @@ static volatile sig_atomic_t running = 1;
 #define LINE_SENS_4 26
 #define LINE_SENS_5 6
 #define NUM_SENS 5
+
+#define COLOR_SENS_LED 16
 
 void cancel_handler(int sig) {
   signal(sig, SIG_IGN);
@@ -92,15 +95,38 @@ void steer_car(float pid_output) {
 
 int main() {
   setup_gpio();
+
   init_gpio(LINE_SENS_1, GPIO_INPUT);
   init_gpio(LINE_SENS_2, GPIO_INPUT);
   init_gpio(LINE_SENS_3, GPIO_INPUT);
   init_gpio(LINE_SENS_4, GPIO_INPUT);
   init_gpio(LINE_SENS_5, GPIO_INPUT);
+  init_gpio(COLOR_SENS_LED, GPIO_OUTPUT);
 
   if (motor_init()) {
+    fprintf(stderr, "error: failed to init motors\n");
     return EXIT_FAILURE;
   }
+
+  struct tcsoup* tc = tcsoup_init();
+  if (!tc) {
+    fprintf(stderr, "error: failed to init color sensor\n");
+    return EXIT_FAILURE;
+  }
+
+  if (tcsoup_set_integration_time(tc, 100) != 0) {
+    tcsoup_deinit(tc);
+    fprintf(stderr, "error: failed to set integration time for color sensor\n");
+    return -1;
+  }
+
+  if (tcsoup_set_gain(tc, 1) != 0) {
+    tcsoup_deinit(tc);
+    fprintf(stderr, "error: failed to set gain for color sensor\n");
+    return -1;
+  }
+
+  set_gpio(COLOR_SENS_LED, 1);
 
   signal(SIGINT, cancel_handler);
   signal(SIGTERM, cancel_handler);
@@ -123,6 +149,9 @@ int main() {
     steer_car(pid_out);
   }
 
+  set_gpio(COLOR_SENS_LED, 0);
+
+  tcsoup_deinit(tc);
   stop_motor();
   deinit_gpio();
 
