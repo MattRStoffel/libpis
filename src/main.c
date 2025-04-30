@@ -86,12 +86,11 @@ void steer_car(float pid_output) {
     }
   }
 
-  RunMotor(LEFT_MOTORS, left_dir, left_speed);
-  RunMotor(RIGHT_MOTORS, right_dir, right_speed);
+  run_motor(LEFT_MOTORS, left_dir, left_speed);
+  run_motor(RIGHT_MOTORS, right_dir, right_speed);
 }
 
 int main() {
-
   setup_gpio();
   init_gpio(LINE_SENS_1, GPIO_INPUT);
   init_gpio(LINE_SENS_2, GPIO_INPUT);
@@ -99,7 +98,9 @@ int main() {
   init_gpio(LINE_SENS_4, GPIO_INPUT);
   init_gpio(LINE_SENS_5, GPIO_INPUT);
 
-  MotorInit();
+  if (motor_init()) {
+    return EXIT_FAILURE;
+  }
 
   signal(SIGINT, cancel_handler);
   signal(SIGTERM, cancel_handler);
@@ -122,7 +123,8 @@ int main() {
     steer_car(pid_out);
   }
 
-  StopMotor();
+  stop_motor();
   deinit_gpio();
-  return 0;
+
+  return EXIT_SUCCESS;
 }

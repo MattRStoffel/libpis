@@ -3,62 +3,81 @@
 
 #include <math.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>
 
-static void PCA9685_WriteByte(UBYTE reg, UBYTE value) {
+struct pca9685_device {
+  i2c_device* i2c;
+};
+
+int pca9685_write_byte(pca9685_device* dev, uint8_t reg, uint8_t value) {
   char wbuf[2] = {reg, value};
-  DEV_HARDWARE_I2C_write(wbuf, 2);
+  i2c_write(dev->i2c, wbuf, 2);
+  return 0;
 }
 
-static UBYTE PCA9685_ReadByte(UBYTE reg) {
-  int ref;
+int pca9685_read_byte(pca9685_device* dev, uint8_t reg) {
   char rbuf[2] = {0};
-  DEV_HARDWARE_I2C_read(reg, rbuf, 1);
-  ref = rbuf[0];
-  return ref;
+  i2c_read(dev->i2c, reg, rbuf, 1);
+  return rbuf[0];
 }
 
-static void PCA9685_SetPWM(UBYTE channel, UWORD on, UWORD off) {
-  PCA9685_WriteByte(LED0_ON_L + 4 * channel, on & 0xFF);
-  PCA9685_WriteByte(LED0_ON_H + 4 * channel, on >> 8);
-  PCA9685_WriteByte(LED0_OFF_L + 4 * channel, off & 0xFF);
-  PCA9685_WriteByte(LED0_OFF_H + 4 * channel, off >> 8);
+static void pca9685_set_pwm(pca9685_device* dev, uint8_t channel, uint16_t on, uint16_t off) {
+  pca9685_write_byte(dev, LED0_ON_L + 4 * channel, on & 0xFF);
+  pca9685_write_byte(dev, LED0_ON_H + 4 * channel, on >> 8);
+  pca9685_write_byte(dev, LED0_OFF_L + 4 * channel, off & 0xFF);
+  pca9685_write_byte(dev, LED0_OFF_H + 4 * channel, off >> 8);
 }
 
-void PCA9685_Init(char addr) {
-  DEV_HARDWARE_I2C_begin("/dev/i2c-1");
-  DEV_HARDWARE_I2C_setSlaveAddress(addr);
+pca9685_device* pca9685_init(uint8_t addr) {
+  pca9685_device* dev = malloc(sizeof(pca9685_device));
+  if (dev == NULL) {
+    return NULL;
+  }
+
+  i2c_device* i2c = i2c_open("/dev/i2c-1", addr);
+  if (!i2c) {
+    free(dev);
+    return NULL;
+  }
+
   char wbuf[2] = {MODE1, 0x00};
-  DEV_HARDWARE_I2C_write(wbuf, 2);
+  i2c_write(i2c, wbuf, 2);
+
+  dev->i2c = i2c;
+
+  return dev;
 }
 
-void PCA9685_SetPWMFreq(UWORD freq) {
+void pca9685_set_pwm_freq(pca9685_device* dev, uint16_t freq) {
   freq *= 0.9; // Correct for overshoot in the frequency setting (see issue #11).
   double prescaleval = 25000000.0;
   prescaleval /= 4096.0;
   prescaleval /= freq;
   prescaleval -= 1;
 
-  UBYTE prescale = floor(prescaleval + 0.5);
+  uint8_t prescale = floor(prescaleval + 0.5);
 
-  UBYTE oldmode = PCA9685_ReadByte(MODE1);
-  UBYTE newmode = (oldmode & 0x7F) | 0x10; // sleep
+  uint8_t oldmode = pca9685_read_byte(dev, MODE1);
+  uint8_t newmode = (oldmode & 0x7F) | 0x10; // sleep
 
-  PCA9685_WriteByte(MODE1, newmode);     // go to sleep
-  PCA9685_WriteByte(PRESCALE, prescale); // set the prescaler
-  PCA9685_WriteByte(MODE1, oldmode);
+  // Go to sleep
+  pca9685_write_byte(dev, MODE1, newmode);
+  // Set the pre-scaler
+  pca9685_write_byte(dev, PRESCALE, prescale);
+  pca9685_write_byte(dev, MODE1, oldmode);
   usleep(5000);
-  PCA9685_WriteByte(MODE1,
-                    oldmode | 0x80); //  This sets the MODE1 register to turn on auto increment.
+  // This sets the `MODE1` register to turn on auto increment.
+  pca9685_write_byte(dev, MODE1, oldmode | 0x80);
 }
 
-void PCA9685_SetPwmDutyCycle(UBYTE channel, UWORD pulse) {
-  PCA9685_SetPWM(channel, 0, pulse * (4096 / 100) - 1);
+void pca9685_set_pwm_duty_cycle(pca9685_device* dev, uint8_t channel, uint16_t pulse) {
+  pca9685_set_pwm(dev, channel, 0, pulse * (4096 / 100) - 1);
 }
 
-void PCA9685_SetLevel(UBYTE channel, UWORD value) {
+void pca9685_set_level(pca9685_device* dev, uint16_t channel, uint16_t value) {
   if (value == 1)
-    PCA9685_SetPWM(channel, 0, 4095);
+    pca9685_set_pwm(dev, channel, 0, 4095);
   else
-    PCA9685_SetPWM(channel, 0, 0);
+    pca9685_set_pwm(dev, channel, 0, 0);
 }

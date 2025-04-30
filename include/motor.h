@@ -15,8 +15,8 @@
 #define MOTOR_A 'A'
 #define MOTOR_B 'B'
 
-void MotorInit(void);
-void RunMotor(char motor, char dir, int speed);
-void StopMotor(void);
+int motor_init(void);
+void run_motor(char motor, char dir, int speed);
+void stop_motor(void);
 
 #endif

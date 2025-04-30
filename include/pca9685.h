@@ -3,10 +3,6 @@
 
 #include <stdint.h>
 
-#define UBYTE uint8_t
-#define UWORD uint16_t
-#define UDOUBLE uint32_t
-
 #define SUBADR1 0x02
 #define SUBADR2 0x03
 #define SUBADR3 0x04
@@ -38,9 +34,11 @@
 #define PCA_CHANNEL_14 14
 #define PCA_CHANNEL_15 15
 
-void PCA9685_Init(char addr);
-void PCA9685_SetPWMFreq(UWORD freq);
-void PCA9685_SetPwmDutyCycle(UBYTE channel, UWORD pulse);
-void PCA9685_SetLevel(UBYTE channel, UWORD value);
+typedef struct pca9685_device pca9685_device;
+
+pca9685_device* pca9685_init(uint8_t addr);
+void pca9685_set_pwm_freq(pca9685_device* dev, uint16_t freq);
+void pca9685_set_pwm_duty_cycle(pca9685_device* dev, uint8_t channel, uint16_t pulse);
+void pca9685_set_level(pca9685_device* dev, uint16_t channel, uint16_t value);
 
 #endif
