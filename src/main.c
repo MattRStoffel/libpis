@@ -4,12 +4,14 @@
 #include "tcsoup.h"
 
 #include <math.h>
+#include <pthread.h>
 #include <signal.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 
 static volatile sig_atomic_t running = 1;
+static volatile color_t color;
 
 // PID
 #define KP 10.0
@@ -33,6 +35,15 @@ static volatile sig_atomic_t running = 1;
 #define NUM_SENS 5
 
 #define COLOR_SENS_LED 16
+#define RED_SENSITIVITY 80
+
+void* read_color(void* arg) {
+  struct tcsoup* tc = (struct tcsoup*)arg;
+  while (running) {
+    tcsoup_read(tc, (color_t*)&color);
+  }
+  return NULL;
+}
 
 void cancel_handler(int sig) {
   signal(sig, SIG_IGN);
@@ -139,6 +150,9 @@ int main() {
   float pid_out;
   bool sensors[NUM_SENS];
 
+  pthread_t color_thread;
+  pthread_create(&color_thread, NULL, read_color, tc);
+
   while (running) {
     read_sensors(sensors);
     error = calculate_error(sensors);
@@ -147,8 +161,13 @@ int main() {
     }
     pid_out = pid_update(&pid, known_error);
     steer_car(pid_out);
+    printf("R::%d, G::%d, B::%d", color.r, color.g, color.b);
+    if (color.r - RED_SENSITIVITY > (color.g + color.b) / 2) {
+      running = false;
+    }
   }
 
+  pthread_join(color_thread, NULL);
   set_gpio(COLOR_SENS_LED, 0);
 
   tcsoup_deinit(tc);
