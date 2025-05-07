@@ -4,11 +4,11 @@
 #include <sys/mman.h>
 #include <unistd.h>
 
-volatile unsigned *gpio;
+volatile unsigned* gpio;
 
 int setup_gpio() {
   int fd;
-  void *map;
+  void* map;
 
   if ((fd = open("/dev/gpiomem", O_RDWR | O_SYNC)) < 0) {
     return -1;
@@ -21,7 +21,7 @@ int setup_gpio() {
     return -1;
   }
 
-  gpio = (volatile unsigned *)map;
+  gpio = (volatile unsigned*)map;
 
   return 0;
 }
@@ -36,8 +36,7 @@ int init_gpio(int pin, int mode) {
 
 int set_gpio(int pin, int value) {
   // Make sure the pin is set to output
-  if ((*(gpio + OFFSET(pin)) & (0b111 << SHIFT(pin))) ^
-      (GPIO_OUTPUT << SHIFT(pin))) {
+  if ((*(gpio + OFFSET(pin)) & (0b111 << SHIFT(pin))) ^ (GPIO_OUTPUT << SHIFT(pin))) {
     return -1;
   }
 
@@ -51,13 +50,22 @@ int set_gpio(int pin, int value) {
   return 0;
 }
 
+void turnOnGPIO(int pin) {
+  *(gpio + 7) = 1 << pin;
+}
+
+void turnOffGPIO(int pin) {
+  *(gpio + 10) = 1 << pin;
+}
+
 int get_gpio(int pin) {
   // Make sure the pin is set to input
-  if ((*(gpio + OFFSET(pin)) & (0b111 << SHIFT(pin))) ^
-      (GPIO_INPUT << SHIFT(pin))) {
+  if ((*(gpio + OFFSET(pin)) & (0b111 << SHIFT(pin))) ^ (GPIO_INPUT << SHIFT(pin))) {
     return -1;
   }
   return (*(gpio + 13) & (1 << pin)) >> pin;
 }
 
-int deinit_gpio() { return munmap(&gpio, 4096); }
+int deinit_gpio() {
+  return munmap(&gpio, 4096);
+}

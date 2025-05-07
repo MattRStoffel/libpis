@@ -14,5 +14,7 @@ int init_gpio(int pin, int mode);
 int set_gpio(int pin, int value);
 int get_gpio(int pin);
 int deinit_gpio();
+void turnOnGPIO(int pin);
+void turnOffGPIO(int pin);
 
 #endif

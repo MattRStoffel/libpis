@@ -12,9 +12,12 @@
 
 static volatile sig_atomic_t running = 1;
 static volatile color_t color;
+static volatile double distance_front;
+static volatile double distance_side;
+const struct timespec triger_sleep_time = {0, 10000};
 
 // PID
-#define KP 10.0
+#define KP 20.0
 #define KI 0.0
 #define KD 30.0
 
@@ -32,15 +35,96 @@ static volatile color_t color;
 #define LINE_SENS_3 5
 #define LINE_SENS_4 26
 #define LINE_SENS_5 6
+#define ECHO_FRONT 24
+#define TRIG_FRONT 23
+#define ECHO_SIDE 8
+#define TRIG_SIDE 25
 #define NUM_SENS 5
 
 #define COLOR_SENS_LED 16
 #define RED_SENSITIVITY 80
 
+#define TRIGGER_TIME 10000
+
+// t_max = 2 * d_max / v_sound
+#define MAX_DISTANCE 300
+#define SOUND_SPEED 340
+
+// found by testing
+#define CHIPBUFFER 99999999
+
+#define TIMEOUT 10000000 / SOUND_SPEED* MAX_DISTANCE * 2 + CHIPBUFFER
+
 void* read_color(void* arg) {
   struct tcsoup* tc = (struct tcsoup*)arg;
   while (running) {
     tcsoup_read(tc, (color_t*)&color);
+  }
+  return NULL;
+}
+
+double getDistance(int trig, int echo) {
+  struct timespec now, start, timeout, triggertime;
+
+  int started = 0;
+
+  triggertime.tv_sec = 0;
+  triggertime.tv_nsec = TRIGGER_TIME;
+  turnOnGPIO(trig);
+  if (nanosleep(&triggertime, NULL) != 0) {
+    return -1;
+  }
+  turnOffGPIO(trig);
+
+  if (clock_gettime(CLOCK_REALTIME, &timeout) != 0) {
+    return -1;
+  }
+  timeout.tv_nsec += TIMEOUT;
+
+  while (clock_gettime(CLOCK_REALTIME, &now) == 0) {
+    int signal = get_gpio(echo);
+
+    if (!started && signal == 1) {
+      if (clock_gettime(CLOCK_REALTIME, &start) != 0) {
+        return -1;
+      }
+      started = 1;
+    } else if (started && signal == 0) {
+      if (clock_gettime(CLOCK_REALTIME, &now) != 0) {
+        return -1;
+      }
+      break;
+    }
+
+    if (now.tv_sec > timeout.tv_sec) {
+      return -2;
+    }
+  }
+
+  // reduce mults : 340 / 2 / 10000000 = 17 / 1000000
+  return (double)(now.tv_nsec - start.tv_nsec) * 17.0 / 1000000.0;
+}
+
+void* sonic_front(void* arg) {
+  (void)arg;
+  int trig = TRIG_FRONT;
+  int echo = ECHO_FRONT;
+  while (running) {
+    double distance = getDistance(trig, echo);
+    printf("			%.2f cm", distance);
+    distance_front = distance;
+  }
+  return NULL;
+}
+
+void* sonic_side(void* arg) {
+  (void)arg;
+  int trig = TRIG_SIDE;
+  int echo = ECHO_SIDE;
+  while (running) {
+    double distance = getDistance(trig, echo);
+    printf("%.2f cm", distance);
+    distance_side = distance;
   }
   return NULL;
 }
@@ -57,7 +141,6 @@ void read_sensors(bool sensors[NUM_SENS]) {
   sensors[3] = get_gpio(LINE_SENS_4);
   sensors[4] = get_gpio(LINE_SENS_5);
   // print the sensor values
-  printf("\rSensors: %d %d %d %d %d", sensors[0], sensors[1], sensors[2], sensors[3], sensors[4]);
 }
 
 float calculate_error(const bool sensors[NUM_SENS]) {
@@ -103,6 +186,11 @@ void steer_car(float pid_output) {
   run_motor(LEFT_MOTORS, left_dir, left_speed);
   run_motor(RIGHT_MOTORS, right_dir, right_speed);
 }
+
+// avoid obstcle, we will calculate delta theta to find our distance from the object relative to
+// the speed of the car if delta thea is greater than the threshhold we are too close and need to
+// turn The ratio of our current speed and dT will give us the distance to the object we just need
+// to maintain that direction using that ratio
 
 int main() {
   setup_gpio();
@@ -153,15 +241,21 @@ int main() {
   pthread_t color_thread;
   pthread_create(&color_thread, NULL, read_color, tc);
 
+  pthread_t sonic_thread_front;
+  pthread_create(&sonic_thread_front, NULL, sonic_front, NULL);
+
+  pthread_t sonic_thread_side;
+  pthread_create(&sonic_thread_side, NULL, sonic_side, NULL);
+
   while (running) {
     read_sensors(sensors);
     error = calculate_error(sensors);
     if (error != 999) {
       known_error = error;
     }
+
     pid_out = pid_update(&pid, known_error);
     steer_car(pid_out);
-    printf("R::%d, G::%d, B::%d", color.r, color.g, color.b);
     if (color.r - RED_SENSITIVITY > (color.g + color.b) / 2) {
       running = false;
     }
