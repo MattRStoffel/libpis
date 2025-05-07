@@ -35,10 +35,10 @@ const struct timespec triger_sleep_time = {0, 10000};
 #define LINE_SENS_3 5
 #define LINE_SENS_4 26
 #define LINE_SENS_5 6
-#define ECHO_FRONT 24
-#define TRIG_FRONT 23
-#define ECHO_SIDE 8
-#define TRIG_SIDE 25
+#define ECHO_FRONT 23
+#define TRIG_FRONT 24
+#define ECHO_SIDE 14
+#define TRIG_SIDE 15
 #define NUM_SENS 5
 
 #define COLOR_SENS_LED 16
@@ -63,46 +63,47 @@ void* read_color(void* arg) {
   return NULL;
 }
 
+const struct timespec triggertime = {0, TRIGGER_TIME};
+
 double getDistance(int trig, int echo) {
-  struct timespec now, start, timeout, triggertime;
+  struct timespec start;
+  struct timespec end;
 
-  int started = 0;
+  init_gpio(trig, GPIO_OUTPUT);
+  init_gpio(echo, GPIO_INPUT);
 
-  triggertime.tv_sec = 0;
-  triggertime.tv_nsec = TRIGGER_TIME;
-  turnOnGPIO(trig);
+  set_gpio(trig, 1);
   if (nanosleep(&triggertime, NULL) != 0) {
     return -1;
   }
-  turnOffGPIO(trig);
+  set_gpio(trig, 0);
 
-  if (clock_gettime(CLOCK_MONOTONIC, &timeout) != 0) {
+  while (get_gpio(echo) != 1) {
+    if (get_gpio(echo) < 0) {
+      return -1;
+    }
+    if (nanosleep(&triggertime, NULL) != 0) {
+      return -1;
+    }
+  }
+  if (clock_gettime(CLOCK_MONOTONIC, &start) != 0) {
     return -1;
   }
-  timeout.tv_nsec += TIMEOUT;
 
-  volatile int signal = get_gpio(echo);
-  while (clock_gettime(CLOCK_MONOTONIC, &now) == 0) {
-
-    if (!started && signal == 1) {
-      if (clock_gettime(CLOCK_MONOTONIC, &start) != 0) {
-        return -1;
-      }
-      started = 1;
-    } else if (started && signal == 0) {
-      if (clock_gettime(CLOCK_MONOTONIC, &now) != 0) {
-        return -1;
-      }
-      break;
+  while (get_gpio(echo) != 0) {
+    if (get_gpio(echo) < 0) {
+      return -1;
     }
-
-    if (now.tv_sec > timeout.tv_sec) {
-      return -2;
+    if (nanosleep(&triggertime, NULL) != 0) {
+      return -1;
     }
+  }
+  if (clock_gettime(CLOCK_MONOTONIC, &end) != 0) {
+    return -1;
   }
 
   // reduce mults : 340 / 2 / 10000000 = 17 / 1000000
-  return (double)(now.tv_nsec - start.tv_nsec) * 17.0 / 1000000.0;
+  return (double)(end.tv_nsec - start.tv_nsec) * 17.0 / 1000000.0;
 }
 
 void* sonic_front(void* arg) {
@@ -111,7 +112,7 @@ void* sonic_front(void* arg) {
   int echo = ECHO_FRONT;
   while (running) {
     double distance = getDistance(trig, echo);
-    printf("			%.2f cm", distance);
+    printf("\nFRONT: %.2f cm\n", distance);
     distance_front = distance;
   }
   return NULL;
@@ -123,7 +124,7 @@ void* sonic_side(void* arg) {
   int echo = ECHO_SIDE;
   while (running) {
     double distance = getDistance(trig, echo);
-    printf("%.2f cm", distance);
+    printf("\nSIDE:  %.2f cm\n", distance);
     distance_side = distance;
   }
   return NULL;
