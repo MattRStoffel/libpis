@@ -81,8 +81,8 @@ double getDistance(int trig, int echo) {
   }
   timeout.tv_nsec += TIMEOUT;
 
+  volatile int signal = get_gpio(echo);
   while (clock_gettime(CLOCK_MONOTONIC, &now) == 0) {
-    int signal = get_gpio(echo);
 
     if (!started && signal == 1) {
       if (clock_gettime(CLOCK_MONOTONIC, &start) != 0) {
