@@ -76,21 +76,21 @@ double getDistance(int trig, int echo) {
   }
   turnOffGPIO(trig);
 
-  if (clock_gettime(CLOCK_REALTIME, &timeout) != 0) {
+  if (clock_gettime(CLOCK_MONOTONIC, &timeout) != 0) {
     return -1;
   }
   timeout.tv_nsec += TIMEOUT;
 
-  while (clock_gettime(CLOCK_REALTIME, &now) == 0) {
+  while (clock_gettime(CLOCK_MONOTONIC, &now) == 0) {
     int signal = get_gpio(echo);
 
     if (!started && signal == 1) {
-      if (clock_gettime(CLOCK_REALTIME, &start) != 0) {
+      if (clock_gettime(CLOCK_MONOTONIC, &start) != 0) {
         return -1;
       }
       started = 1;
     } else if (started && signal == 0) {
-      if (clock_gettime(CLOCK_REALTIME, &now) != 0) {
+      if (clock_gettime(CLOCK_MONOTONIC, &now) != 0) {
         return -1;
       }
       break;
