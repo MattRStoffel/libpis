@@ -25,7 +25,7 @@ const struct timespec triger_sleep_time = {0, 10000};
 #define ERR_WEIGHT_STEP 2
 
 // Motors
-#define MAX_SPEED 80
+#define MAX_SPEED 90
 #define LEFT_MOTORS MOTOR_A
 #define RIGHT_MOTORS MOTOR_B
 
@@ -112,7 +112,6 @@ void* sonic_front(void* arg) {
   int echo = ECHO_FRONT;
   while (running) {
     double distance = getDistance(trig, echo);
-    printf("\nFRONT: %.2f cm\n", distance);
     distance_front = distance;
   }
   return NULL;
@@ -124,7 +123,6 @@ void* sonic_side(void* arg) {
   int echo = ECHO_SIDE;
   while (running) {
     double distance = getDistance(trig, echo);
-    printf("\nSIDE:  %.2f cm\n", distance);
     distance_side = distance;
   }
   return NULL;
@@ -188,10 +186,67 @@ void steer_car(float pid_output) {
   run_motor(RIGHT_MOTORS, right_dir, right_speed);
 }
 
-// avoid obstcle, we will calculate delta theta to find our distance from the object relative to
-// the speed of the car if delta thea is greater than the threshhold we are too close and need to
-// turn The ratio of our current speed and dT will give us the distance to the object we just need
-// to maintain that direction using that ratio
+void obstacle_avoidance() {
+  const double preferred_distance = 40;
+  if (distance_front <= 0 || distance_front >= preferred_distance) {
+    return; // No obstacle detected
+  }
+
+  // === Initial turn to avoid obstacle ===
+  steer_car(MAX_SPEED);
+  run_motor(LEFT_MOTORS, FORWARD, MAX_SPEED);
+  run_motor(RIGHT_MOTORS, BACKWARD, MAX_SPEED);
+
+  double last_distance = distance_side;
+  while (running) {
+    if (fabs(distance_side - last_distance) > 0.5) {
+      break; // We’ve turned off the line
+    }
+    last_distance = distance_side;
+  }
+
+  // === Begin PID-controlled drive along the obstacle ===
+  PID_Controller pid;
+  pid_init(&pid, KP, KI, KD, MAX_SPEED);
+
+  const int TIMEOUT_SECONDS = 1;
+  time_t start_time = time(NULL);
+  bool sensors[NUM_SENS];
+
+  while (running) {
+    read_sensors(sensors);
+
+    // Exit if we detect a line after timeout
+    if (difftime(time(NULL), start_time) >= TIMEOUT_SECONDS) {
+      for (int i = 0; i < NUM_SENS; i++) {
+        if (sensors[i]) {
+
+          run_motor(LEFT_MOTORS, BACKWARD, MAX_SPEED);
+          run_motor(RIGHT_MOTORS, FORWARD, MAX_SPEED);
+          return;
+        }
+      }
+    }
+
+    // Calculate PID output
+    double error = preferred_distance - distance_side;
+    float pid_output = pid_update(&pid, error);
+
+    // Adjust motor speeds based on PID
+    int left_speed = MAX_SPEED;
+    int right_speed = MAX_SPEED;
+    int adjustment = pid_output * MAX_SPEED;
+
+    if (pid_output < 0) {
+      right_speed -= adjustment;
+    } else {
+      left_speed += adjustment;
+    }
+
+    run_motor(LEFT_MOTORS, FORWARD, left_speed);
+    run_motor(RIGHT_MOTORS, FORWARD, right_speed);
+  }
+}
 
 int main() {
   setup_gpio();
@@ -254,6 +309,7 @@ int main() {
     if (error != 999) {
       known_error = error;
     }
+    obstacle_avoidance();
 
     pid_out = pid_update(&pid, known_error);
     steer_car(pid_out);
