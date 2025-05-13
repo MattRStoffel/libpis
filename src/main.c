@@ -25,7 +25,7 @@ const struct timespec triger_sleep_time = {0, 10000};
 #define ERR_WEIGHT_STEP 2
 
 // Motors
-#define MAX_SPEED 90
+#define MAX_SPEED 100
 #define LEFT_MOTORS MOTOR_A
 #define RIGHT_MOTORS MOTOR_B
 
@@ -186,65 +186,90 @@ void steer_car(float pid_output) {
   run_motor(RIGHT_MOTORS, right_dir, right_speed);
 }
 
+#define WINDOW_SIZE 5
+
+double turn_90_degrees() {
+  double readings[WINDOW_SIZE] = {9999, 9999, 9999, 9999, 9999};
+  int index = 0;
+  double min = 9999;
+  double prev_avg = 9999;
+
+  while (running) {
+    steer_car(MAX_SPEED);
+
+    readings[index] = distance_side;
+    index = (index + 1) % WINDOW_SIZE;
+
+    // Compute rolling average
+    double sum = 0;
+    for (int i = 0; i < WINDOW_SIZE; i++) {
+      sum += readings[i];
+    }
+    double avg = sum / WINDOW_SIZE;
+
+    double derivative = avg - prev_avg;
+
+    if (min < 9999 && derivative > 1.0) { // threshold > 0 to avoid false triggers
+      return avg;
+    }
+
+    if (avg < 40 && avg > 0 && avg < min) {
+      min = avg;
+    }
+
+    prev_avg = avg;
+  }
+
+  return -1;
+}
+
 void obstacle_avoidance() {
-  const double preferred_distance = 40;
+  const double preferred_distance = 20;
   if (distance_front <= 0 || distance_front >= preferred_distance) {
     return; // No obstacle detected
   }
 
-  // === Initial turn to avoid obstacle ===
-  steer_car(MAX_SPEED);
-  run_motor(LEFT_MOTORS, FORWARD, MAX_SPEED);
-  run_motor(RIGHT_MOTORS, BACKWARD, MAX_SPEED);
-
-  double last_distance = distance_side;
-  while (running) {
-    if (fabs(distance_side - last_distance) > 0.5) {
-      break; // We’ve turned off the line
-    }
-    last_distance = distance_side;
+  double distance = turn_90_degrees();
+  if (distance < 0) {
+    return;
   }
 
-  // === Begin PID-controlled drive along the obstacle ===
   PID_Controller pid;
   pid_init(&pid, KP, KI, KD, MAX_SPEED);
 
-  const int TIMEOUT_SECONDS = 1;
-  time_t start_time = time(NULL);
   bool sensors[NUM_SENS];
 
   while (running) {
     read_sensors(sensors);
 
+    int x = 0;
     // Exit if we detect a line after timeout
-    if (difftime(time(NULL), start_time) >= TIMEOUT_SECONDS) {
-      for (int i = 0; i < NUM_SENS; i++) {
-        if (sensors[i]) {
-
-          run_motor(LEFT_MOTORS, BACKWARD, MAX_SPEED);
-          run_motor(RIGHT_MOTORS, FORWARD, MAX_SPEED);
-          return;
-        }
+    for (int i = 0; i < NUM_SENS; i++) {
+      x += sensors[i];
+      if (x > 2) {
+        steer_car(MAX_SPEED);
+        struct timespec triger_sleep_time = {1, 2000000000};
+        nanosleep(&triger_sleep_time, NULL);
+        return;
       }
     }
 
-    // Calculate PID output
-    double error = preferred_distance - distance_side;
+    double error = distance - distance_side;
     float pid_output = pid_update(&pid, error);
 
     // Adjust motor speeds based on PID
     int left_speed = MAX_SPEED;
     int right_speed = MAX_SPEED;
-    int adjustment = pid_output * MAX_SPEED;
+    int adjustment = pid_output;
 
     if (pid_output < 0) {
-      right_speed -= adjustment;
+      right_speed += adjustment;
     } else {
-      left_speed += adjustment;
+      left_speed -= adjustment;
     }
 
-    run_motor(LEFT_MOTORS, FORWARD, left_speed);
-    run_motor(RIGHT_MOTORS, FORWARD, right_speed);
+    run_motor(RIGHT_MOTORS, FORWARD, left_speed);
+    run_motor(LEFT_MOTORS, FORWARD, right_speed);
   }
 }
 
@@ -314,7 +339,7 @@ int main() {
     pid_out = pid_update(&pid, known_error);
     steer_car(pid_out);
     if (color.r - RED_SENSITIVITY > (color.g + color.b) / 2) {
-      running = false;
+      running = true;
     }
   }
 
