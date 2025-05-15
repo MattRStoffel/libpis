@@ -1,7 +1,7 @@
 /**************************************************************
  * Class:: CSC-615-01 Spring 2025
  * Name:: Dammit, Bobby!
- * Student ID::
+ * Student IDs:: Joseph - 923625817
  * Github-Name:: water-sucks
  * Project:: Assignment 5 - RGB Sensor
  *

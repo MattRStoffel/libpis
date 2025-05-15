@@ -1,3 +1,16 @@
+/**************************************************************
+ * Class:: CSC-615-01 Spring 2025
+ * Name:: Dammit, Bobby!
+ * Student IDs:: Joseph - 923625817
+ * Github-Name:: water-sucks
+ * Project:: Assignment 5 - RGB Sensor
+ *
+ * File:: include/pca9865.h
+ *
+ * Description:: Library for the PCA9865 motor hat. 
+ *
+ **************************************************************/
+
 #ifndef _PCA9685_H_
 #define _PCA9685_H_
 
@@ -36,9 +49,35 @@
 
 typedef struct pca9685_device pca9685_device;
 
+/*
+ * Initializes the PCA9685 motor hat at given I2C address.
+ * Returns a struct on success.
+ * Returns NULL on faliure.
+ * var addr: I2C device for the motor hat
+ */
 pca9685_device* pca9685_init(uint8_t addr);
+
+/*
+ * Sets the PWM frequency of the PCA device.
+ * var dev: PCA device
+ * var freq: PWM frequency being set
+ */
 void pca9685_set_pwm_freq(pca9685_device* dev, uint16_t freq);
+
+/*
+ * Sets PWM duty cycle of the PCA device channel.
+ * var dev: PCA device
+ * var channel: PCA channel being pulsed
+ * var pulse: PWM pulse for the channel being set
+ */
 void pca9685_set_pwm_duty_cycle(pca9685_device* dev, uint8_t channel, uint16_t pulse);
+
+/*
+ * Sets level of PCA device channel to provided value.
+ * var dev: PCA device
+ * var channel: PCA channel being set
+ * var value: Channel value being set
+ */
 void pca9685_set_level(pca9685_device* dev, uint16_t channel, uint16_t value);
 
 #endif
