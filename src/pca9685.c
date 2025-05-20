@@ -1,3 +1,20 @@
+/**************************************************************
+ * Class:: CSC-615-01 Spring 2025
+ * Name:: Arjun Bhagat, Joseph Behroz, Varun Narravula, Matt Stoffel
+ * Student IDs:: 917129686, 923625817, 923287037, 92312711
+ * Github-Name:: water-sucks
+ * Project:: Line Following Bot
+ *
+ * File:: src/pca9685.c
+ *
+ * Description:
+ *   Low-level driver for PCA9685 PWM over I2C.
+ *   - Open and configure PCA9685 via Linux I2C-dev.
+ *   - Send and receive MODE1, PRESCALE, and LED register bytes.
+ *   - Enable auto-increment and set PWM frequency with correction.
+ *   - Set PWM on/off counts or full on/off per channel.
+ **************************************************************/
+
 #include "pca9685.h"
 #include "i2c.h"
 

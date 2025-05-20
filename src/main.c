@@ -1,3 +1,20 @@
+/**************************************************************
+ * Class:: CSC-615-01 Spring 2025
+ * Name:: Arjun Bhagat, Joseph Behroz, Varun Narravula, Matt Stoffel
+ * Student IDs:: 917129686, 923625817, 923287037, 92312711
+ * Github-Name:: water-sucks
+ * Project:: Line Following Bot
+ *
+ * File:: src/main.c
+ *
+ * Description:
+ *   Main control program for the line-following robot.
+ *   - Initializes GPIO and I2C interfaces for sensor and actuator communication
+ *   - Spawns threads to read color (TCS34725) and ultrasonic distance sensors
+ *   - Implements PID-based line following and obstacle avoidance routines
+ *   - Manages signal handling for clean shutdown on user interrupt
+ **************************************************************/
+
 #include "gpio.h"
 #include "motor.h"
 #include "pid.h"

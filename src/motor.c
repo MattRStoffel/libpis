@@ -1,3 +1,19 @@
+/**************************************************************
+ * Class:: CSC-615-01 Spring 2025
+ * Name:: Arjun Bhagat, Joseph Behroz, Varun Narravula, Matt Stoffel
+ * Student IDs:: 917129686, 923625817, 923287037, 92312711
+ * Github-Name:: water-sucks
+ * Project:: Line Following Bot
+ *
+ * File:: src/motor.c
+ *
+ * Description:
+ *   PCA9685-based motor control implementation for the line-following robot.
+ *   - Initialize the PCA9685 PWM controller and set operating frequency
+ *   - Run individual motors with specified speed and direction
+ *   - Stop both motors by setting PWM duty cycles to zero
+ **************************************************************/
+
 #include "motor.h"
 #include "pca9685.h"
 

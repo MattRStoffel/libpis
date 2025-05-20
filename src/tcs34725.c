@@ -1,14 +1,18 @@
 /**************************************************************
  * Class:: CSC-615-01 Spring 2025
- * Name:: Dammit, Bobby!
- * Student ID::
+ * Name:: Arjun Bhagat, Joseph Behroz, Varun Narravula, Matt Stoffel
+ * Student IDs:: 917129686, 923625817, 923287037, 923127111
  * Github-Name:: water-sucks
- * Project:: Assignment 5 - RGB Sensor
+ * Project:: Line Following Bot
  *
  * File:: src/tcs34725.c
  *
- * Description:: Create a library for the TCS34725 RGB sensor.
- *
+ * Description:
+ *   Driver library for the TCS34725 RGB color sensor via I2C.
+ *   - Open and close the sensor interface on a given I2C bus path.
+ *   - Read and write 8-bit registers and 16-bit word data.
+ *   - Configure enable, integration time, wait time, and interrupt thresholds.
+ *   - Fetch raw clear, red, green, and blue channel values.
  **************************************************************/
 
 #include "tcs34725.h"

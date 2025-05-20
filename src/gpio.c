@@ -1,3 +1,19 @@
+/**************************************************************
+ * Class:: CSC-615-01 Spring 2025
+ * Name:: Arjun Bhagat, Joseph Behroz, Varun Narravula, Matt Stoffel
+ * Student IDs:: 917129686, 923625817, 923287037, 92312711
+ * Github-Name:: water-sucks
+ * Project:: Line Following Bot
+ *
+ * File:: src/gpio.c
+ *
+ * Description:
+ *   GPIO control library using /dev/gpiomem on a Raspberry Pi.
+ *   Provides functions to map the GPIO registers into user space,
+ *   configure pin modes, and set or read pin values to support
+ *   hardware interfacing for the line-following bot.
+ **************************************************************/
+
 #include "gpio.h"
 
 #include <fcntl.h>

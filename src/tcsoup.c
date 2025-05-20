@@ -1,14 +1,18 @@
 /**************************************************************
  * Class:: CSC-615-01 Spring 2025
- * Name:: Dammit, Bobby!
- * Student ID::
+ * Name:: Arjun Bhagat, Joseph Behroz, Varun Narravula, Matt Stoffel
+ * Student IDs:: 917129686, 923625817, 923287037, 923127111
  * Github-Name:: water-sucks
- * Project:: Assignment 5 - RGB Sensor
+ * Project:: Line Following Bot
  *
  * File:: src/tcsoup.c
  *
- * Description:: Create a library for the TCS34725 RGB sensor.
- *
+ * Description:
+ *   High-level library for the TCS34725 RGB color sensor.
+ *   - Initialize sensor and configure integration time and gain.
+ *   - Read raw clear, red, green, and blue channel values.
+ *   - Normalize and gamma-correct raw readings.
+ *   - Approximate to nearest named color with confidence score.
  **************************************************************/
 
 #include "tcsoup.h"

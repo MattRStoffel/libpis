@@ -1,3 +1,20 @@
+/**************************************************************
+ * Class:: CSC-615-01 Spring 2025
+ * Name:: Arjun Bhagat, Joseph Behroz, Varun Narravula, Matt Stoffel
+ * Student IDs:: 917129686, 923625817, 923287037, 92312711
+ * Github-Name:: water-sucks
+ * Project:: Line Following Bot
+ *
+ * File:: src/i2c.c
+ *
+ * Description:
+ *   I2C communication library for Raspberry Pi using the Linux
+ *   I2C-dev interface. Provides functions to open an I2C bus device,
+ *   set the target slave address, and perform register-level
+ *   read/write operations to support sensor and peripheral interfacing
+ *   in the line-following bot project.
+ **************************************************************/
+
 #include "i2c.h"
 
 #include <fcntl.h>

@@ -1,3 +1,20 @@
+/**************************************************************
+ * Class:: CSC-615-01 Spring 2025
+ * Name:: Arjun Bhagat, Joseph Behroz, Varun Narravula, Matt Stoffel
+ * Student IDs:: 917129686, 923625817, 923287037, 92312711
+ * Github-Name:: water-sucks
+ * Project:: Line Following Bot
+ *
+ * File:: src/pid.c
+ *
+ * Description:
+ *   Proportional-Integral-Derivative (PID) controller module.
+ *   - Clamp a value within specified bounds.
+ *   - Initialize PID gains and reset internal state.
+ *   - Compute output from error, integral, and derivative terms.
+ *   - Apply output clamping to limit controller commands.
+ **************************************************************/
+
 #include "pid.h"
 #include <math.h>
 

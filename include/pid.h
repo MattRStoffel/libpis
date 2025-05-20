@@ -1,16 +1,15 @@
 /**************************************************************
  * Class:: CSC-615-01 Spring 2025
- * Name:: Dammit, Bobby!
- * Student IDs:: Joseph - 923625817
+ * Name:: Arjun Bhagat, Joseph Behroz, Varun Narravula, Matt Stoffel
+ * Student IDs:: 917129686, 923625817, 923287037, 92312711
  * Github-Name:: water-sucks
- * Project:: Assignment 5 - RGB Sensor
+ * Project:: Line Following Bot
  *
  * File:: include/pid.h
  *
- * Description:: Header file for PID functionality.
+ * Description:: Header for PID functionality.
  *
  **************************************************************/
-
 
 #ifndef PID_H
 #define PID_H
@@ -18,7 +17,6 @@
 typedef struct {
   float kp, ki, kd;
   float prev_error;
-  float integral;
   float clamp_val;
 } PID_Controller;
 
