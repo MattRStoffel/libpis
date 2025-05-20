@@ -5,6 +5,7 @@
 
 #include <math.h>
 #include <pthread.h>
+#include <setjmp.h>
 #include <signal.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -40,6 +41,8 @@ const struct timespec triger_sleep_time = {0, 10000};
 #define ECHO_SIDE 14
 #define TRIG_SIDE 15
 #define NUM_SENS 5
+#define BUTTON_PIN 27
+#define BUTTON_PWR_PIN 22
 
 #define COLOR_SENS_LED 16
 #define RED_SENSITIVITY 80
@@ -128,9 +131,12 @@ void* sonic_side(void* arg) {
   return NULL;
 }
 
+jmp_buf main_loop_jump_buf;
+
 void cancel_handler(int sig) {
   signal(sig, SIG_IGN);
   running = 0;
+  longjmp(main_loop_jump_buf, 1);
 }
 
 void read_sensors(bool sensors[NUM_SENS]) {
@@ -273,6 +279,19 @@ void obstacle_avoidance() {
   }
 }
 
+void wait_for_button() {
+  volatile int button_pressed = 0;
+
+  while (true) {
+    button_pressed = get_gpio(BUTTON_PIN);
+    if (button_pressed) {
+      break;
+    }
+  }
+
+  button_pressed = 0;
+}
+
 int main() {
   setup_gpio();
 
@@ -282,6 +301,8 @@ int main() {
   init_gpio(LINE_SENS_4, GPIO_INPUT);
   init_gpio(LINE_SENS_5, GPIO_INPUT);
   init_gpio(COLOR_SENS_LED, GPIO_OUTPUT);
+  init_gpio(BUTTON_PWR_PIN, GPIO_OUTPUT);
+  init_gpio(BUTTON_PIN, GPIO_INPUT);
 
   if (motor_init()) {
     fprintf(stderr, "error: failed to init motors\n");
@@ -307,6 +328,7 @@ int main() {
   }
 
   set_gpio(COLOR_SENS_LED, 1);
+  set_gpio(BUTTON_PWR_PIN, 1);
 
   signal(SIGINT, cancel_handler);
   signal(SIGTERM, cancel_handler);
@@ -328,23 +350,33 @@ int main() {
   pthread_t sonic_thread_side;
   pthread_create(&sonic_thread_side, NULL, sonic_side, NULL);
 
-  while (running) {
-    read_sensors(sensors);
-    error = calculate_error(sensors);
-    if (error != 999) {
-      known_error = error;
-    }
-    obstacle_avoidance();
+  if (setjmp(main_loop_jump_buf) == 0) {
+    wait_for_button();
 
-    pid_out = pid_update(&pid, known_error);
-    steer_car(pid_out);
-    if (color.r - RED_SENSITIVITY > (color.g + color.b) / 2) {
-      running = true;
+    while (running) {
+      read_sensors(sensors);
+      error = calculate_error(sensors);
+      if (error != 999) {
+        known_error = error;
+      }
+      obstacle_avoidance();
+
+      pid_out = pid_update(&pid, known_error);
+      steer_car(pid_out);
+      if (color.r - RED_SENSITIVITY > (color.g + color.b) / 2) {
+        running = true;
+      }
     }
+  } else {
+    fprintf(stderr, "signal handler triggered, exiting\n");
   }
 
   pthread_join(color_thread, NULL);
+  pthread_join(sonic_thread_front, NULL);
+  pthread_join(sonic_thread_side, NULL);
+
   set_gpio(COLOR_SENS_LED, 0);
+  set_gpio(BUTTON_PWR_PIN, 0);
 
   tcsoup_deinit(tc);
   stop_motor();
