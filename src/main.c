@@ -10,6 +10,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 static volatile sig_atomic_t running = 1;
 static volatile color_t color;
@@ -26,7 +27,7 @@ const struct timespec triger_sleep_time = {0, 10000};
 #define ERR_WEIGHT_STEP 2
 
 // Motors
-#define MAX_SPEED 100
+#define MAX_SPEED 50
 #define LEFT_MOTORS MOTOR_A
 #define RIGHT_MOTORS MOTOR_B
 
@@ -45,7 +46,8 @@ const struct timespec triger_sleep_time = {0, 10000};
 #define BUTTON_PWR_PIN 22
 
 #define COLOR_SENS_LED 16
-#define RED_SENSITIVITY 80
+#define RED_SENSITIVITY 100
+#define GREEN_SENSITIVITY 20
 
 #define TRIGGER_TIME 10000
 
@@ -254,8 +256,9 @@ void obstacle_avoidance() {
       x += sensors[i];
       if (x > 2) {
         steer_car(MAX_SPEED);
-        struct timespec triger_sleep_time = {1, 2000000000};
-        nanosleep(&triger_sleep_time, NULL);
+        printf("OH SHOOT IM GONNA TURN");
+        usleep(2e5);
+        printf("OH SHOOT IM DONE TURNIN");
         return;
       }
     }
@@ -290,6 +293,13 @@ void wait_for_button() {
   }
 
   button_pressed = 0;
+}
+
+void do_a_barrle_roll() {
+  printf("bruh\n");
+  run_motor(RIGHT_MOTORS, FORWARD, MAX_SPEED);
+  run_motor(LEFT_MOTORS, BACKWARD, MAX_SPEED);
+  usleep(2e6);
 }
 
 int main() {
@@ -364,7 +374,12 @@ int main() {
       pid_out = pid_update(&pid, known_error);
       steer_car(pid_out);
       if (color.r - RED_SENSITIVITY > (color.g + color.b) / 2) {
-        running = true;
+        running = false;
+      }
+
+      if (color.g - GREEN_SENSITIVITY > (color.r + color.b) / 2) {
+        printf("OH FUCK ITS GREEN AS SHIT\n");
+        do_a_barrle_roll();
       }
     }
   } else {
